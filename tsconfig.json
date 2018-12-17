@@ -13,6 +13,7 @@
         "build"
     ],
     "include": [
-        "./sources/index.ts"
+        "./sources/index.ts",
+        "./sources/migrations"
     ]
 }

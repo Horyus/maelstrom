@@ -1,3 +1,8 @@
 {
-  "extends": ["linted"]
+  "extends": ["linted"],
+  "linterOptions": {
+    "exclude": [
+      "sources/migrations/*"
+    ]
+  }
 }
