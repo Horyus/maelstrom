@@ -4,22 +4,19 @@
   "description": "🌊Crypto Data Aggregator",
   "main": "index.js",
   "scripts": {
-
-    "build": "tsc",
+    "build": "tsc && npm run teleporter:copy_script",
     "compile": "npm run build && mkdir -p bin && nexe ./build/index.js -o ./bin/maelstrom",
     "start": "node ./build/index.js",
-
     "lint": "tslint --project .",
     "test": "jest --verbose --coverage",
     "codecov": "codecov",
-
     "docker:run_postgres": "./scripts/docker/run_postgres.sh",
     "docker:down_postgres": "./scripts/docker/down_postgres.sh",
     "docker:connect_postgres": "./scripts/docker/connect_postgres.sh",
 
-    "typeorm:migrations_run": "typeorm migration:run",
-    "typeorm:migrations_revert": "typeorm migration:revert"
+    "teleporter:copy_script": "./scripts/teleporter/copy_script.sh",
 
+    "maelstrom:install": "npm run compile && cp ./bin/maelstrom /usr/bin/"
   },
   "repository": {
     "type": "git",
@@ -40,12 +37,18 @@
     "@types/node": "^10.12.15",
     "@types/signale": "^1.2.0",
     "commandpost": "^1.4.0",
+    "google-trends-api": "^4.7.0",
+    "hasbin": "^1.2.3",
+    "is-root": "^2.0.0",
+    "moment": "^2.23.0",
     "nexe": "^2.0.0-rc.34",
+    "node-binance-api": "^0.8.7",
     "pg": "^7.7.1",
     "reflect-metadata": "^0.1.12",
     "signale": "^1.3.0",
     "typeorm": "^0.2.9",
-    "typescript": "^3.2.2"
+    "typescript": "^3.2.2",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "@types/jest": "^23.3.10",
