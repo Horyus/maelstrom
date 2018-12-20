@@ -1,18 +1,32 @@
 import { Logger, QueryRunner } from 'typeorm';
-import * as Signale from 'signale';
+import * as Signale            from 'signale';
 
 export class CustomTypeORMLogger implements Logger {
 
-    logQuery(query: string, parameters?: any[], queryRunner?: QueryRunner): any
-    {
+    logQuery(query: string, parameters?: any[], queryRunner?: QueryRunner): any {
+        if (parameters) {
+            for (let idx = 0; idx < parameters.length; ++idx) {
+                query = query.replace(`$${idx + 1}`, parameters[idx]);
+            }
+        }
         Signale.info(query);
     }
 
     logQueryError(error: string, query: string, parameters?: any[], queryRunner?: QueryRunner): any {
+        if (parameters) {
+            for (let idx = 0; idx < parameters.length; ++idx) {
+                query = query.replace(`$${idx + 1}`, parameters[idx]);
+            }
+        }
         Signale.fatal(query);
     }
 
     logQuerySlow(time: number, query: string, parameters?: any[], queryRunner?: QueryRunner): any {
+        if (parameters) {
+            for (let idx = 0; idx < parameters.length; ++idx) {
+                query = query.replace(`$${idx + 1}`, parameters[idx]);
+            }
+        }
         Signale.warn(`${time} ms: ${query}`);
     }
 
@@ -29,13 +43,13 @@ export class CustomTypeORMLogger implements Logger {
             case 'log':
             case 'info':
                 Signale.info(message);
-                break ;
+                break;
             case 'warn':
                 Signale.warn(message);
-                break ;
+                break;
             default:
                 Signale.info(message);
-                break ;
+                break;
         }
     }
 

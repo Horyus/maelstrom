@@ -1,0 +1,9 @@
+{
+  "binance": {
+    "public_key": "pub",
+    "private_key": "priv",
+    "test": false
+  },
+  "limits": {
+  }
+}
