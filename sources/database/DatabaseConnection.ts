@@ -1,22 +1,17 @@
 import { Connection, createConnection } from 'typeorm';
-import { Coin }                         from '../entities/Coin';
-import { DatasetInfos }                   from '../entities/DatasetInfos';
 import { CustomTypeORMLogger }          from './CustomTypeORMLogger';
 
 export class DatabaseConnection {
 
+    private static instance: DatabaseConnection;
     public _: Connection;
-
     public host: string;
     public port: number;
     public username: string;
     public password: string;
     public database: string;
 
-    private static instance: DatabaseConnection;
-
     private constructor() {
-
     }
 
     public static get Instance(): DatabaseConnection {
@@ -37,12 +32,8 @@ export class DatabaseConnection {
             username: this.username,
             password: this.password,
             database: this.database,
-            entities: [
-                Coin,
-                DatasetInfos
-            ],
-            logging: true,
-            logger: new CustomTypeORMLogger()
+            logging: !!process.env.LOG,
+            logger: process.env.LOG ? new CustomTypeORMLogger() : undefined
         });
 
     }

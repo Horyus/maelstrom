@@ -3,8 +3,21 @@ import { ConfigManager } from './ConfigManager';
 describe('[ConfigManager]', () => {
 
     test('Loading valid configuration', () => {
-        ConfigManager.Instance.load(`${__dirname}/test_resources/valid.json`);
-        expect(ConfigManager.Instance._.test[1]).toEqual('b');
+        expect(
+            () => {
+                ConfigManager.Instance.load(`${__dirname}/test_resources/valid.json`);
+                ConfigManager.Instance.validate();
+            }
+        ).not.toThrow();
+    });
+
+    test('[Fail] Load invalid configuration: missing coins', () => {
+        expect(
+            () => {
+                ConfigManager.Instance.load(`${__dirname}/test_resources/missing_coins.json`);
+                ConfigManager.Instance.validate();
+            }
+        ).toThrow();
     });
 
     test('[Fail] Load invalid json file', () => {

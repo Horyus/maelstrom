@@ -1,7 +1,25 @@
 {
-  "test": [
-    "a",
-    "b",
-    "c"
+  "binance": {
+    "public_key": "pub",
+    "private_key": "priv",
+    "test": false
+  },
+  "coins": [
+    {
+      "name": "ETH",
+      "config":{
+        "gtrends": {
+          "name": "ethereum"
+        }
+      }
+    },
+    {
+      "name": "EOS",
+      "config": {
+        "gtrends": {
+          "name": "eos crypto"
+        }
+      }
+    }
   ]
 }
