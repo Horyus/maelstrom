@@ -1,6 +1,5 @@
-import * as BinanceAPI                                   from 'node-binance-api';
+import * as request                                      from 'request';
 import { BatchTimes, IndexedBatchTimes, MissingBatches } from '../../types/BatchTimes';
-import { ConfigManager }                                 from '../../config/ConfigManager';
 import { Plugin }                                        from '../Plugin';
 import { sameDay }                                       from '../../helpers/sameDay';
 
@@ -25,8 +24,6 @@ export interface BinancePayload {
 }
 
 export class Binance extends Plugin<BinancePayload> {
-
-    private readonly binance_api: any;
 
     constructor() {
         super('binance', [
@@ -60,16 +57,16 @@ export class Binance extends Plugin<BinancePayload> {
                 field_type: 'decimal',
             }
         ]);
-        try {
-            this.binance_api = BinanceAPI().options({
-                APIKEY: ConfigManager.Instance._.binance.public_key,
-                APISECRET: ConfigManager.Instance._.binance.private_key,
-                useServerTime: true,
-                test: !!ConfigManager.Instance._.binance.test
+    }
+
+    private static async sticks(symbol: string, start: number, end: number): Promise<any> {
+        return new Promise((ok: any, ko: any): void => {
+            request(`https://api.binance.com/api/v1/klines?symbol=${symbol}BTC&interval=5m&startTime=${start}&endTime=${end}`, function (error: Error, response: any, body: string): void {
+                if (error) ko(error);
+                if (body) ok(JSON.parse(body));
+                ko();
             });
-        } catch (e) {
-            this.log.fatal(`[${Date.now()}]\t\t[Invalid Keys]`);
-        }
+        });
     }
 
     public async order(batches: MissingBatches): Promise<void> {
@@ -102,12 +99,7 @@ export class Binance extends Plugin<BinancePayload> {
             for (const day of days) {
                 try {
 
-                    const data = await new Promise<any>((ok: any, ko: any): void => {
-                        this.binance_api.candlesticks(`${coin}BTC`, '5m', (error: Error, ticks: any, symbol: any) => {
-                            if (error) return ko(error);
-                            return ok(ticks);
-                        }, {startTime: day[0].end, endTime: day[day.length - 1].end + (5 * 60 * 1000)});
-                    });
+                    const data = await Binance.sticks(coin, day[0].start, day[day.length - 1].end);
 
                     const found: number[] = [];
                     for (const tick of data) {
@@ -152,6 +144,7 @@ export class Binance extends Plugin<BinancePayload> {
                     this.addFail(e);
                     if (this.getFailCount() >= 10) {
                         this.cooldown(5);
+                        this.teleport();
                         return;
                     }
                 }

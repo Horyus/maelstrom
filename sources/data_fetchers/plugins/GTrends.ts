@@ -95,14 +95,8 @@ export class GTrends extends Plugin<GTrendsPayload> {
 
                 } catch (e) {
                     this.addFail(e);
-                    if (e.requestBody) {
-                        if (e.requestBody.indexOf('429') !== -1 || e.requestBody.indexOf('(Too Many Requests)') !== -1) {
-                            this.cooldown(5);
-                            this.teleport();
-                            return;
-                        }
-                    }
-                    if (this.getFailCount() >= 30) {
+                    if ((e.requestBody && (e.requestBody.indexOf('429') !== -1 || e.requestBody.indexOf('(Too Many Requests)')) !== -1)
+                        || (this.getFailCount() >= 10)) {
                         this.cooldown(5);
                         this.teleport();
                         return;
