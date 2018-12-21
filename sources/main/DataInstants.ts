@@ -1,12 +1,8 @@
-import { BatchTimes, IndexedBatchTimes, MissingBatches, MissingBatchesReport } from '../types/BatchTimes';
-import { getRoundedTime }                                                      from '../helpers/getRoundedTime';
-import { getBatchTimeRangeExclusive }                                          from '../helpers/getBatchTimeRangeExclusive';
-import { getBatchTimeRange }                                                   from '../helpers/getBatchTimeRange';
-import { getBatchTime }                                                        from '../helpers/getBatchTime';
-
-interface DataInstantsBatches {
-    [key: number]: boolean;
-}
+import { BatchTimes, IndexedBatchTimes, MissingBatchesReport } from '../types/BatchTimes';
+import { getRoundedTime }                                      from '../helpers/getRoundedTime';
+import { getBatchTimeRangeExclusive }                          from '../helpers/getBatchTimeRangeExclusive';
+import { getBatchTimeRange }                                   from '../helpers/getBatchTimeRange';
+import { getBatchTime }                                        from '../helpers/getBatchTime';
 
 interface DataInstantsCoins {
     [key: string]: BatchTimes[];
@@ -16,30 +12,36 @@ interface DataInstantsPlugins {
     [key: string]: DataInstantsCoins;
 }
 
+interface CurrentStore {
+    [key: string]: number;
+}
+
 export class DataInstants {
 
-    private current: number;
+    private readonly current: CurrentStore = {};
     private readonly coins: string[] = [];
     private readonly plugins: DataInstantsPlugins = {};
 
     constructor() {
-        this.current = getRoundedTime();
     }
 
-    public clear(plugin: string, coin: string, time: IndexedBatchTimes): void {
-        this.plugins[plugin][coin].splice(time.index, 1);
+    public clear(plugin: string, coin: string, time: IndexedBatchTimes[]): void {
+        time = time.sort((leftb: IndexedBatchTimes, rightb: IndexedBatchTimes): number =>
+            rightb.index - leftb.index);
+        for (const batch of time) {
+            this.plugins[plugin][coin].splice(batch.index, 1);
+        }
     }
 
     public addPlugin(name: string): void {
-        this.setCurrent();
         this.plugins[name] = {};
         for (const coin of this.coins) {
             this.plugins[name][coin] = [];
+            this.current[name] = getRoundedTime();
         }
     }
 
     public addCoin(name: string): void {
-        this.setCurrent();
         this.coins.push(name);
         for (const plugin of Object.keys(this.plugins)) {
             this.plugins[plugin][name] = [];
@@ -47,7 +49,6 @@ export class DataInstants {
     }
 
     public setHoles(plugin: string, coin: string, holes: number[]): void {
-        this.setCurrent();
         for (const hole of holes) {
             const batch: IndexedBatchTimes = {...getBatchTime(hole), index: 0};
             this.placeBatchTime(plugin, coin, batch);
@@ -55,8 +56,8 @@ export class DataInstants {
     }
 
     public setStart(plugin: string, coin: string, start: number): void {
-        this.setCurrent();
-        const range: IndexedBatchTimes[] = getBatchTimeRange(start, this.current).map((batch: BatchTimes): IndexedBatchTimes => ({
+        this.setCurrent(plugin);
+        const range: IndexedBatchTimes[] = getBatchTimeRange(start, this.current[plugin]).map((batch: BatchTimes): IndexedBatchTimes => ({
             ...batch,
             index: 0
         }));
@@ -66,7 +67,6 @@ export class DataInstants {
     }
 
     public getMissingBatches(plugin: string, limit?: number): MissingBatchesReport {
-        this.setCurrent();
         const ret: MissingBatchesReport = {batches: {}, count: 0};
         for (const coin of this.coins) {
             const amount = this.plugins[plugin][coin].length < Math.floor(limit / this.coins.length) ? this.plugins[plugin][coin].length : Math.floor(limit / this.coins.length);
@@ -104,22 +104,20 @@ export class DataInstants {
 
     }
 
-    private setCurrent(): void {
+    public setCurrent(plugin: string): void {
         const new_current: number = getRoundedTime();
-        if (new_current !== this.current) {
-            const newBatches: IndexedBatchTimes[] = getBatchTimeRangeExclusive(this.current, new_current).map((batch: BatchTimes): IndexedBatchTimes => ({
+        if (new_current !== this.current[plugin]) {
+            const newBatches: IndexedBatchTimes[] = getBatchTimeRangeExclusive(this.current[plugin], new_current).map((batch: BatchTimes): IndexedBatchTimes => ({
                 ...batch,
                 index: 0
             }));
-            for (const plugin of Object.keys(this.plugins)) {
-                for (const coin of this.coins) {
-                    for (const batch of newBatches) {
-                        this.placeBatchTime(plugin, coin, batch);
-                    }
+            for (const coin of this.coins) {
+                for (const batch of newBatches) {
+                    this.placeBatchTime(plugin, coin, batch);
                 }
             }
+            this.current[plugin] = new_current;
         }
-        this.current = new_current;
     }
 
 }

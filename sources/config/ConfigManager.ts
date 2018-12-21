@@ -1,13 +1,35 @@
-import * as FS      from 'fs';
-import * as Signale from 'signale';
+import * as FS     from 'fs';
+import { Signale } from 'signale';
 
 export class ConfigManager {
 
     private static instance: ConfigManager;
     public _: any;
     public origin: string;
+    private readonly log: Signale;
 
     private constructor() {
+        const signale_config = {
+            scope: 'config',
+            types: {
+                info: {
+                    badge: '',
+                    color: 'blue',
+                    label: 'INFO'
+                },
+                fatal: {
+                    badge: '',
+                    color: 'red',
+                    label: '[KO]'
+                },
+                warn: {
+                    badge: '',
+                    color: 'yellow',
+                    label: '[!!]'
+                }
+            }
+        };
+        this.log = new Signale(signale_config);
     }
 
     static get Instance(): ConfigManager {
@@ -19,7 +41,7 @@ export class ConfigManager {
             this._ = JSON.parse(FS.readFileSync(config_path).toString());
             this.origin = config_path;
         } catch (e) {
-            Signale.fatal(e);
+            this.log.fatal(e);
             throw new Error(`Unable to load config from ${config_path}`);
         }
     }

@@ -1,5 +1,4 @@
 import * as BinanceAPI                                   from 'node-binance-api';
-import * as Signale                                      from 'signale';
 import { BatchTimes, IndexedBatchTimes, MissingBatches } from '../../types/BatchTimes';
 import { ConfigManager }                                 from '../../config/ConfigManager';
 import { Plugin }                                        from '../Plugin';
@@ -69,7 +68,7 @@ export class Binance extends Plugin<BinancePayload> {
                 test: !!ConfigManager.Instance._.binance.test
             });
         } catch (e) {
-            Signale.fatal('Invalid binance configuration keys');
+            this.log.fatal(`[${Date.now()}]\t\t[Invalid Keys]`);
         }
     }
 
@@ -150,10 +149,8 @@ export class Binance extends Plugin<BinancePayload> {
                     }
 
                 } catch (e) {
-                    this.addFail();
-                    Signale.fatal(`binance: ${e.message}`);
-                    if (this.getFailCount() >= 30) {
-                        Signale.warn(`binance error count is too high, cooling down`);
+                    this.addFail(e);
+                    if (this.getFailCount() >= 10) {
                         this.cooldown(5);
                         return;
                     }

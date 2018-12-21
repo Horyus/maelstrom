@@ -6,19 +6,19 @@ import { DatasetTablesManager }                    from '../database/DatasetTabl
 import { DataInstants }                            from './DataInstants';
 import { IndexedBatchTimes, MissingBatchesReport } from '../types/BatchTimes';
 import { DatasetConfig }                           from '../types/DatasetConfig';
-import * as Signale                                from 'signale';
+import { Signale }                                 from 'signale';
 import { TablesDetails }                           from '../types/TablesDetails';
 import { Teleporter }                              from '../data_fetchers/Teleporter';
 import { RecoverPayload }                          from '../types/RecoverPayload';
-import { TemporaryPayloadStore }                   from '../types/TemporaryPayloadStore';
+import { CoinsRemoveList, TemporaryPayloadStore }  from '../types/TemporaryPayloadStore';
 import { DatabaseConnection }                      from '../database/DatabaseConnection';
 import { EntityManager }                           from 'typeorm';
 
 export class Scraper {
 
+    private static log: Signale;
     private readonly plugins: Plugin[];
     private readonly data_instants: DataInstants;
-
     private readonly coin_data: CoinData = {};
     private start_time: Date;
     private dataset_config: DatasetConfig[] = [];
@@ -27,17 +27,40 @@ export class Scraper {
     constructor(plugins: Plugin[]) {
         this.data_instants = new DataInstants();
         this.plugins = plugins;
+        const signale_config = {
+            scope: 'scraper',
+            types: {
+                info: {
+                    badge: '',
+                    color: 'blue',
+                    label: 'INFO'
+                },
+                fatal: {
+                    badge: '',
+                    color: 'red',
+                    label: '[KO]'
+                },
+                warn: {
+                    badge: '',
+                    color: 'yellow',
+                    label: '[!!]'
+                }
+            }
+        };
+        Scraper.log = new Signale(signale_config);
+
     }
 
     private static async _global_infos(): Promise<void> {
         const tdata: TablesDetails[] = await DatasetTablesManager.getTablesDetails();
+        Scraper.log.info(`[${new Date(Date.now())}]`);
         for (const table of tdata) {
-            Signale.info(`${table.name} ${table.count}`);
+            Scraper.log.info(`[${new Date(Date.now())}]\t\t[${table.name}] [${table.count} full rows]`);
         }
+        Scraper.log.info(`[${new Date(Date.now())}]`);
     }
 
     public async init(): Promise<void> {
-        Signale.info('[INIT]: Scraper');
         this.start_time = new Date(Date.now());
         const coins: Coin[] = ConfigManager.Instance._.coins;
 
@@ -69,20 +92,19 @@ export class Scraper {
         for (const coin of coins) {
             for (const plugin of this.plugins) {
                 const recovery: RecoverPayload = await DatasetTablesManager.Instance.init(plugin.name, plugin.getConfig(), coin.name);
-                Signale.info(`[${plugin.name}] [${coin.name}] [${recovery.holes.length} holes] [${new Date(recovery.start)}]`);
+                Scraper.log.info(`[${new Date(Date.now())}]\t\t[${plugin.name}] [${coin.name}] [${recovery.holes.length} holes] [${new Date(recovery.start)}]`);
                 this.data_instants.setHoles(plugin.name, coin.name, recovery.holes);
                 this.data_instants.setStart(plugin.name, coin.name, recovery.start);
             }
         }
 
         if (Teleporter.Instance.enabled) {
-            Signale.info(`Teleporter enabled: ${Teleporter.Instance.getPortals().length} portals available`);
+            Teleporter.Instance.listPortals();
         }
 
     }
 
     public async start(): Promise<void> {
-        Signale.info('[START]: Scraper');
         for (const plugin of this.plugins) {
             setTimeout(this.infinite_never_ending_loop_that_should_last_as_long_as_possible_pls.bind(this, plugin), 0);
         }
@@ -96,38 +118,41 @@ export class Scraper {
     private async infinite_never_ending_loop_that_should_last_as_long_as_possible_pls(plugin: Plugin): Promise<void> {
         const start = Date.now();
         try {
-            const wait: Promise<void>[] = [];
+            this.data_instants.setCurrent(plugin.name);
             const missing: MissingBatchesReport = this.data_instants.getMissingBatches(plugin.name, ConfigManager.Instance._.limits[plugin.name]);
-            const last_count: number = plugin.getInsertCount();
-
-            if (last_count) {
-                Signale.info(`${plugin.name} made ${last_count} inserts`);
-            }
 
             if (missing.count !== 0) {
                 await plugin.checkCooldownAndOrder(missing);
+                await this._dispatch_tmp_payload_store(plugin.name);
+                plugin.printInsertions();
+                this.tmp_payload_store[plugin.name] = [];
             }
 
-            await this._dispatch_tmp_payload_store(plugin.name);
-
         } catch (e) {
-            Signale.fatal(e);
+            Scraper.log.fatal(e);
         }
         setTimeout(this.infinite_never_ending_loop_that_should_last_as_long_as_possible_pls.bind(this, plugin), Date.now() - start < 5000 ? 5000 : 0);
     }
 
     private async _dispatch_tmp_payload_store(plugin: string): Promise<void> {
 
-        return DatabaseConnection.Instance._.transaction(async (txmanager: EntityManager): Promise<void> => {
+        const erase_payload: CoinsRemoveList = {};
+        for (const coin of Object.keys(this.coin_data)) {
+            erase_payload[coin] = [];
+        }
+        await DatabaseConnection.Instance._.transaction(async (txmanager: EntityManager): Promise<void> => {
             for (const data of this.tmp_payload_store[plugin]) {
                 try {
                     await DatasetTablesManager.set(txmanager, plugin, data.coin, data.batch.end, data.payload);
-                    this.data_instants.clear(plugin, data.coin, data.batch);
+                    erase_payload[data.coin].push(data.batch);
                 } catch (e) {
-                    Signale.fatal(e.message);
+                    Scraper.log.fatal(e.message);
                 }
             }
         });
+        for (const coin of Object.keys(this.coin_data)) {
+            this.data_instants.clear(plugin, coin, erase_payload[coin]);
+        }
 
     }
 

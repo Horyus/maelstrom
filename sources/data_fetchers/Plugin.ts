@@ -2,7 +2,7 @@ import { CoinData }                                                from '../type
 import { DatasetConfig }                                           from '../types/DatasetConfig';
 import { IndexedBatchTimes, MissingBatches, MissingBatchesReport } from '../types/BatchTimes';
 import { onPayload }                                               from '../types/FetchersCallbacks';
-import * as Signale                                                from 'signale';
+import { Signale }                                                 from 'signale';
 import { Teleporter }                                              from './Teleporter';
 
 export abstract class Plugin<Payload = any> {
@@ -11,14 +11,42 @@ export abstract class Plugin<Payload = any> {
     protected readonly config: DatasetConfig[];
     protected coin_data: CoinData = {};
     protected on_payload: onPayload<Payload>;
+    protected log: Signale;
     private insert_count: number = 0;
     private sleep_time: number;
     private last_known_location: string;
     private fail_count: number = 0;
+    private save_count: number = 0;
 
     protected constructor(name: string, config: DatasetConfig[]) {
         this.name = name;
         this.config = config;
+        const signale_config = {
+            scope: this.name,
+            types: {
+                success: {
+                    badge: '',
+                    color: 'green',
+                    label: '[++]'
+                },
+                info: {
+                    badge: '',
+                    color: 'blue',
+                    label: 'INFO'
+                },
+                fatal: {
+                    badge: '',
+                    color: 'red',
+                    label: '[KO]'
+                },
+                warn: {
+                    badge: '',
+                    color: 'yellow',
+                    label: '[!!]'
+                }
+            }
+        };
+        this.log = new Signale(signale_config);
     }
 
     public getConfig(): DatasetConfig[] {
@@ -42,26 +70,36 @@ export abstract class Plugin<Payload = any> {
 
     public async checkCooldownAndOrder(report: MissingBatchesReport): Promise<void> {
 
+        this.save_count = report.count;
+        this.log.info(`[${new Date(Date.now())}]\t\t[Given ${this.save_count}]`);
         if (this.sleep_time && Date.now() < this.sleep_time) {
             if (Teleporter.Instance.enabled && this.last_known_location && this.last_known_location !== Teleporter.Instance.Location) {
-                Signale.info(`${this.name} cooldown off due to succesful teleportation`);
+                this.log.info(`[${new Date(Date.now())}]\t\t[Cooldown OFF] [Successful teleportation]`);
                 this.sleep_time = undefined;
             } else {
-                Signale.warn(`${this.name} cooldown [${Math.floor((this.sleep_time - Date.now()) / 1000)}s]`);
+                this.log.info(`[${new Date(Date.now())}]\t\t[Cooldown ${Math.floor((this.sleep_time - Date.now()) / 1000)}s]`);
                 return;
             }
         }
 
         if (this.sleep_time) {
-            Signale.info(`${this.name} cooldown off`);
+            this.log.info(`${this.name} cooldown off`);
             this.sleep_time = undefined;
         }
 
-        Signale.info(`${this.name} is given ${report.count} batches to process`);
         this.fail_count = 0;
         await this.order(report.batches);
-        Signale.info(`${this.name} is done for this round`);
+
+        if (this.getFailCount()) {
+            this.log.warn(`[${new Date(Date.now())}]\t\t[Given ${this.save_count}] [Errors ${this.getFailCount()}]`);
+        } else {
+            this.log.info(`[${new Date(Date.now())}]\t\t[Given ${this.save_count}] [Errors ${this.getFailCount()}]`);
+        }
         return;
+    }
+
+    public printInsertions(): void {
+        this.log.success(`[${new Date(Date.now())}]\t\t[Given ${this.save_count}] [Errors ${this.getFailCount()}] [Inserted ${this.getInsertCount()}]`);
     }
 
     public abstract start(): void;
@@ -71,20 +109,21 @@ export abstract class Plugin<Payload = any> {
     public abstract async order(batches: MissingBatches): Promise<void>;
 
     protected cooldown(time: number): void {
-        Signale.info(`${this.name} set itself into ${time * 60}s cooldown`);
+        this.log.warn(`[${new Date(Date.now())}]\t\t[Cooldown START] [${time * 60}s]`);
         this.sleep_time = Date.now() + (time * 60 * 1000);
     }
 
     protected teleport(): void {
         if (Teleporter.Instance.enabled) {
-            Signale.info(`${this.name} requested teleportation`);
+            this.log.warn(`[${new Date(Date.now())}]\t\t[Teleport]`);
             this.last_known_location = Teleporter.Instance.Location;
             Teleporter.Instance.teleport();
         }
     }
 
-    protected addFail(): void {
+    protected addFail(e: Error): void {
         ++this.fail_count;
+        this.log.fatal(`[${new Date(Date.now())}]\t\t[Error nb ${this.fail_count}] [${e.message}]`);
     }
 
     protected getFailCount(): number {

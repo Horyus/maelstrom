@@ -2,7 +2,7 @@ import * as FS                 from 'fs';
 import * as UUID               from 'uuid/v1';
 import * as HasBin             from 'hasbin';
 import * as IsRoot             from 'is-root';
-import * as Signale            from 'signale';
+import { Signale }             from 'signale';
 import { ChildProcess, spawn } from 'child_process';
 
 export class Teleporter {
@@ -13,8 +13,30 @@ export class Teleporter {
     private location: string = UUID();
     private teleporting: boolean = false;
     private openvpn: ChildProcess;
+    private readonly log: Signale;
 
     private constructor() {
+        const signale_config = {
+            scope: 'teleptr',
+            types: {
+                info: {
+                    badge: '',
+                    color: 'blue',
+                    label: 'INFO'
+                },
+                fatal: {
+                    badge: '',
+                    color: 'red',
+                    label: '[KO]'
+                },
+                warn: {
+                    badge: '',
+                    color: 'yellow',
+                    label: '[!!]'
+                }
+            }
+        };
+        this.log = new Signale(signale_config);
     }
 
     public static get Instance(): Teleporter {
@@ -66,8 +88,10 @@ export class Teleporter {
         ];
     }
 
-    public getPortals(): string[] {
-        return this.portals;
+    public listPortals(): void {
+        for (const portal of this.portals) {
+            this.log.info(`[${new Date(Date.now())}]\t\t[LOADED] ${portal}`);
+        }
     }
 
     public teleport(): void {
@@ -104,7 +128,7 @@ export class Teleporter {
         this.openvpn.stdout.on('data', (data: Buffer) => {
             if (data.toString().indexOf('Initialization Sequence Completed') !== -1) {
                 this.location = UUID();
-                Signale.info(`Teleportation successful to ${this.portals[random_portal]}`);
+                this.log.info(`[${new Date(Date.now())}]\t\t[Teleportation Successful] [${this.portals[random_portal]}]`);
                 this.teleporting = false;
             }
         });
@@ -113,7 +137,7 @@ export class Teleporter {
             //Signale.fatal(data.toString());
         });
         this.openvpn.on('close', (code: number) => {
-            Signale.info('Teleporter closed');
+            this.log.info(`[${new Date(Date.now())}]\t\t[Closed]`);
         });
     }
 
