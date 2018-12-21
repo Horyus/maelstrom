@@ -152,8 +152,8 @@ export class Binance extends Plugin<BinancePayload> {
                 } catch (e) {
                     this.addFail();
                     Signale.fatal(`binance: ${e.message}`);
-                    if (this.getFailCount() >= 10) {
-                        Signale.warn(`binance: fail count to high`);
+                    if (this.getFailCount() >= 30) {
+                        Signale.warn(`binance error count is too high, cooling down`);
                         this.cooldown(5);
                         return;
                     }

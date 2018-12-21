@@ -97,7 +97,12 @@ export class GTrends extends Plugin<GTrendsPayload> {
                         }
                         Signale.fatal(e.requestBody);
                     }
-                    Signale.fatal(`gtrends: ${e.message}`);
+                    if (this.getFailCount() >= 30) {
+                        Signale.warn(`gtrends error count is too high, teleporting`);
+                        this.cooldown(5);
+                        this.teleport();
+                        return;
+                    }
                 }
             }
 

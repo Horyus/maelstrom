@@ -13,7 +13,7 @@ import { Teleporter }           from './data_fetchers/Teleporter';
 
 const cli = CommandPost
     .create('maelstrom <action>')
-    .version('1.0.1', '-v, --version')
+    .version('1.0.2', '-v, --version')
     .description('Crypto Data Aggregator')
     .option('--config     <string>', 'Maelstrom configuration file path')
     .option('--dbport     <port>', 'Port of Postgres Database')
