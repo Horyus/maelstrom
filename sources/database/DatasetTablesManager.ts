@@ -47,7 +47,7 @@ export class DatasetTablesManager {
 
     }
 
-    static async set(plugin: string, coin: string, timestamp: number, data: any): Promise<void> {
+    static async set(txmanager: EntityManager, plugin: string, coin: string, timestamp: number, data: any): Promise<void> {
 
         const processed: any = {};
 
@@ -55,7 +55,7 @@ export class DatasetTablesManager {
             processed[plugin + '_' + key] = (<any> data)[key];
         }
 
-        await DatabaseConnection.Instance._.createQueryBuilder()
+        await txmanager.createQueryBuilder()
             .insert()
             .into(`MAELSTROM___${coin}`)
             .values({

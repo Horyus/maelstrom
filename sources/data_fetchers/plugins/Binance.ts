@@ -1,9 +1,9 @@
-import * as BinanceAPI                from 'node-binance-api';
-import * as Signale                   from 'signale';
-import { BatchTimes, MissingBatches } from '../../types/BatchTimes';
-import { ConfigManager }              from '../../config/ConfigManager';
-import { Plugin }                     from '../Plugin';
-import { sameDay }                    from '../../helpers/sameDay';
+import * as BinanceAPI                                   from 'node-binance-api';
+import * as Signale                                      from 'signale';
+import { BatchTimes, IndexedBatchTimes, MissingBatches } from '../../types/BatchTimes';
+import { ConfigManager }                                 from '../../config/ConfigManager';
+import { Plugin }                                        from '../Plugin';
+import { sameDay }                                       from '../../helpers/sameDay';
 
 enum BinanceRequestFields {
     OpenPrice = 1,
@@ -78,7 +78,7 @@ export class Binance extends Plugin<BinancePayload> {
 
             if (!batches[coin].length) continue;
 
-            const days: BatchTimes[][] = [];
+            const days: IndexedBatchTimes[][] = [];
             let day_idx: number = 0;
 
             batches[coin] = batches[coin].sort((batch_left: BatchTimes, batch_right: BatchTimes): number =>
@@ -130,14 +130,14 @@ export class Binance extends Plugin<BinancePayload> {
                             payload.trade_number = tick[BinanceRequestFields.TradeCount];
                             payload.taker_buy = parseFloat(tick[BinanceRequestFields.TakerBuyVolume]);
 
-                            this.on_payload(coin, time, payload);
+                            this.on_payload(coin, batch, payload);
                         }
 
                     }
 
                     for (const batch of day) {
                         if (found.findIndex((val: number) => val === batch.end) === -1) {
-                            this.on_payload(coin, batch.end, {
+                            this.on_payload(coin, batch, {
                                 open_price: -1,
                                 low_price: -1,
                                 high_price: -1,

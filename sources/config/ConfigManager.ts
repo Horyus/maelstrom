@@ -1,4 +1,5 @@
-import * as FS from 'fs';
+import * as FS      from 'fs';
+import * as Signale from 'signale';
 
 export class ConfigManager {
 
@@ -18,6 +19,7 @@ export class ConfigManager {
             this._ = JSON.parse(FS.readFileSync(config_path).toString());
             this.origin = config_path;
         } catch (e) {
+            Signale.fatal(e);
             throw new Error(`Unable to load config from ${config_path}`);
         }
     }

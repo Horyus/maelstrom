@@ -3,8 +3,14 @@ export interface BatchTimes {
     end: number;
 }
 
+export interface IndexedBatchTimes {
+    start: number;
+    end: number;
+    index: number;
+}
+
 export interface MissingBatches {
-    [key: string]: BatchTimes[];
+    [key: string]: IndexedBatchTimes[];
 }
 
 export interface MissingBatchesReport {

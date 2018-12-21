@@ -1,8 +1,8 @@
-import { Plugin }                     from '../Plugin';
-import { BatchTimes, MissingBatches } from '../../types/BatchTimes';
-import * as GTrendsAPI                from 'google-trends-api';
-import * as Signale                   from 'signale';
-import { sameHour }                   from '../../helpers/sameHour';
+import { Plugin }                                        from '../Plugin';
+import { BatchTimes, IndexedBatchTimes, MissingBatches } from '../../types/BatchTimes';
+import * as GTrendsAPI                                   from 'google-trends-api';
+import * as Signale                                      from 'signale';
+import { sameHour }                                      from '../../helpers/sameHour';
 
 interface GTrendsPayload {
     search: number;
@@ -29,7 +29,7 @@ export class GTrends extends Plugin<GTrendsPayload> {
         for (const coin of Object.keys(batches)) {
             if (!batches[coin].length) continue;
 
-            const hours: BatchTimes[][] = [];
+            const hours: IndexedBatchTimes[][] = [];
             let hour_idx: number = 0;
 
             // Sort the batches to have batches that are the same day together
@@ -80,7 +80,7 @@ export class GTrends extends Plugin<GTrendsPayload> {
                                 break;
                             }
                         }
-                        this.on_payload(coin, batch.end, {
+                        this.on_payload(coin, batch, {
                             search: val
                         });
 

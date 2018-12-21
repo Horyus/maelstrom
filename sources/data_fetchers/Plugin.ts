@@ -1,9 +1,9 @@
-import { CoinData }                             from '../types/CoinData';
-import { DatasetConfig }                        from '../types/DatasetConfig';
-import { MissingBatches, MissingBatchesReport } from '../types/BatchTimes';
-import { onPayload }                            from '../types/FetchersCallbacks';
-import * as Signale                             from 'signale';
-import { Teleporter }                           from './Teleporter';
+import { CoinData }                                                from '../types/CoinData';
+import { DatasetConfig }                                           from '../types/DatasetConfig';
+import { IndexedBatchTimes, MissingBatches, MissingBatchesReport } from '../types/BatchTimes';
+import { onPayload }                                               from '../types/FetchersCallbacks';
+import * as Signale                                                from 'signale';
+import { Teleporter }                                              from './Teleporter';
 
 export abstract class Plugin<Payload = any> {
 
@@ -27,9 +27,9 @@ export abstract class Plugin<Payload = any> {
 
     public plug(coin_data: CoinData, on_payload: onPayload<Payload>): DatasetConfig[] {
         this.coin_data = coin_data;
-        this.on_payload = (coin: string, time: number, payload: Payload): void => {
+        this.on_payload = (coin: string, batch: IndexedBatchTimes, payload: Payload): void => {
             ++this.insert_count;
-            on_payload(coin, time, payload);
+            on_payload(coin, batch, payload);
         };
         return this.config;
     }
