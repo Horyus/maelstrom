@@ -59,7 +59,7 @@ export class GTrends extends Plugin<GTrendsPayload> {
                     raw_data = await GTrendsAPI.interestOverTime({
                         keyword: this.coin_data[coin].gtrends.name,
                         startTime: new Date(hour[0].start),
-                        endTime: new Date(hour[hour.length - 1].end),
+                        endTime: new Date(hour[hour.length - 1].end + (5 * 60 * 1000)),
                         granularTimeResolution: true
                     });
 
