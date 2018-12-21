@@ -5,17 +5,19 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc && npm run teleporter:copy_script",
-    "compile": "npm run build && mkdir -p bin && nexe ./build/index.js -o ./bin/maelstrom",
+    "compile": "npm run build && mkdir -p bin && nexe ./build/index.js -o ./bin/maelstrom --target 8.11.2",
     "start": "node ./build/index.js",
     "lint": "tslint --project .",
     "test": "jest --verbose --coverage",
     "codecov": "codecov",
     "docker:run_postgres": "./scripts/docker/run_postgres.sh",
     "docker:down_postgres": "./scripts/docker/down_postgres.sh",
+    "docker:prod_run_postgres": "./scripts/docker/prod_run_postgres.sh",
+    "docker:prod_down_postgres": "./scripts/docker/prod_down_postgres.sh",
+    "docker:prod_create_volume": "./scripts/docker/prod_create_volume.sh",
+    "docker:prod_connect_postgres": "./scripts/docker/prod_connect_postgres.sh",
     "docker:connect_postgres": "./scripts/docker/connect_postgres.sh",
-
     "teleporter:copy_script": "./scripts/teleporter/copy_script.sh",
-
     "maelstrom:install": "npm run compile && cp ./bin/maelstrom /usr/bin/"
   },
   "repository": {

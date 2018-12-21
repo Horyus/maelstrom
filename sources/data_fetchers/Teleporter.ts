@@ -87,13 +87,19 @@ export class Teleporter {
                 '--script-security', '2',
                 '--config', this.portals[random_portal]
             ];
+        } else {
+            args = [
+	    '--up', '/etc/openvpn/update-resolv-conf',
+	    '--down', '/etc/openvpn/update-resolv-conf',
+                '--script-security', '2',
+                '--config', this.portals[random_portal]
+            ];
+
+        }
             if (this.auth) {
                 args.push('--auth-user-pass');
                 args.push(this.auth);
             }
-        } else {
-
-        }
         this.openvpn = spawn('openvpn', args);
         this.openvpn.stdout.on('data', (data: Buffer) => {
             if (data.toString().indexOf('Initialization Sequence Completed') !== -1) {
