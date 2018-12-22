@@ -71,21 +71,17 @@ export abstract class Plugin<Payload = any> {
     public async checkCooldownAndOrder(report: MissingBatchesReport): Promise<void> {
 
         this.save_count = report.count;
-        this.log.info(`[${new Date(Date.now())}]\t\t[Given ${this.save_count}]`);
         if (this.sleep_time && Date.now() < this.sleep_time) {
-            if (Teleporter.Instance.enabled && this.last_known_location && this.last_known_location !== Teleporter.Instance.Location) {
-                this.log.info(`[${new Date(Date.now())}]\t\t[Cooldown OFF] [Successful teleportation]`);
-                this.sleep_time = undefined;
-            } else {
-                this.log.info(`[${new Date(Date.now())}]\t\t[Cooldown ${Math.floor((this.sleep_time - Date.now()) / 1000)}s]`);
-                return;
-            }
+            this.log.info(`[${new Date(Date.now())}]\t\t[Cooldown ${Math.floor((this.sleep_time - Date.now()) / 1000)}s]`);
+            return;
         }
 
         if (this.sleep_time) {
-            this.log.info(`${this.name} cooldown off`);
+            this.log.info(`[${new Date(Date.now())}]\t\t[Cooldown OFF]`);
             this.sleep_time = undefined;
         }
+
+        this.log.info(`[${new Date(Date.now())}]\t\t[Given ${this.save_count}]`);
 
         this.fail_count = 0;
         await this.order(report.batches);
@@ -99,6 +95,9 @@ export abstract class Plugin<Payload = any> {
     }
 
     public printInsertions(): void {
+        if (this.sleep_time && Date.now() < this.sleep_time) {
+            return;
+        }
         this.log.success(`[${new Date(Date.now())}]\t\t[Given ${this.save_count}] [Errors ${this.getFailCount()}] [Inserted ${this.getInsertCount()}]`);
     }
 
@@ -123,7 +122,8 @@ export abstract class Plugin<Payload = any> {
 
     protected addFail(e: Error): void {
         ++this.fail_count;
-        this.log.fatal(`[${new Date(Date.now())}]\t\t[Error nb ${this.fail_count}] [${e.message}]`);
+        this.log.fatal(`[${new Date(Date.now())}]\t\t[Error nb ${this.fail_count}] [${e.name}] [${e.message}]`);
+        this.log.fatal(e.stack);
     }
 
     protected getFailCount(): number {

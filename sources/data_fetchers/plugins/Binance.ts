@@ -143,7 +143,7 @@ export class Binance extends Plugin<BinancePayload> {
                 } catch (e) {
                     this.addFail(e);
                     if (this.getFailCount() >= 10) {
-                        this.cooldown(5);
+                        this.cooldown(2);
                         this.teleport();
                         return;
                     }
