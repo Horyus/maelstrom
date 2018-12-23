@@ -2,6 +2,8 @@ import { Plugin }                                        from '../Plugin';
 import { BatchTimes, IndexedBatchTimes, MissingBatches } from '../../types/BatchTimes';
 import * as GTrendsAPI                                   from 'google-trends-api';
 import { sameHour }                                      from '../../helpers/sameHour';
+import { ShuffleArray }                                  from '../../helpers/ShuffleArray';
+import { Sleep }                                         from '../../helpers/Sleep';
 
 interface GTrendsPayload {
     search: number;
@@ -25,7 +27,9 @@ export class GTrends extends Plugin<GTrendsPayload> {
     }
 
     public async order(batches: MissingBatches): Promise<void> {
-        for (const coin of Object.keys(batches)) {
+        const coin_list: string[] = Object.keys(batches);
+        ShuffleArray(coin_list);
+        for (const coin of coin_list) {
             if (!batches[coin].length) continue;
 
             const hours: IndexedBatchTimes[][] = [];
@@ -102,6 +106,9 @@ export class GTrends extends Plugin<GTrendsPayload> {
                         this.cooldown(5);
                         this.teleport();
                         return;
+                    } else {
+                        this.log.warn(`[${new Date(Date.now())}] [Sleeping for 60s]`);
+                        await Sleep(60 * 1000);
                     }
                 }
             }

@@ -2,6 +2,8 @@ import * as request                                      from 'request';
 import { BatchTimes, IndexedBatchTimes, MissingBatches } from '../../types/BatchTimes';
 import { Plugin }                                        from '../Plugin';
 import { sameDay }                                       from '../../helpers/sameDay';
+import { ShuffleArray }                                  from '../../helpers/ShuffleArray';
+import { Sleep }                                         from '../../helpers/Sleep';
 
 enum BinanceRequestFields {
     OpenPrice = 1,
@@ -70,7 +72,9 @@ export class Binance extends Plugin<BinancePayload> {
     }
 
     public async order(batches: MissingBatches): Promise<void> {
-        for (const coin of Object.keys(batches)) {
+        const coin_list: string[] = Object.keys(batches);
+        ShuffleArray(coin_list);
+        for (const coin of coin_list) {
 
             if (!batches[coin].length) continue;
 
@@ -146,6 +150,9 @@ export class Binance extends Plugin<BinancePayload> {
                         this.cooldown(2);
                         this.teleport();
                         return;
+                    } else {
+                        this.log.warn(`[${new Date(Date.now())}] [Sleeping for 60s]`);
+                        await Sleep(60 * 1000);
                     }
                 }
             }
