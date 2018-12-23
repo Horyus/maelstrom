@@ -39,7 +39,7 @@
     "@types/node": "^10.12.15",
     "@types/signale": "^1.2.0",
     "commandpost": "^1.4.0",
-    "google-trends-api": "^4.7.0",
+    "google-trends-api": "https://github.com/Horyus/google-trends-api",
     "hasbin": "^1.2.3",
     "is-root": "^2.0.0",
     "moment": "^2.23.0",

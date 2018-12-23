@@ -1,15 +1,24 @@
-import { Plugin }                                        from '../Plugin';
-import { BatchTimes, IndexedBatchTimes, MissingBatches } from '../../types/BatchTimes';
-import * as GTrendsAPI                                   from 'google-trends-api';
-import { sameHour }                                      from '../../helpers/sameHour';
-import { ShuffleArray }                                  from '../../helpers/ShuffleArray';
-import { Sleep }                                         from '../../helpers/Sleep';
+import { Plugin }                            from '../Plugin';
+import { IndexedBatchTimes, MissingBatches } from '../../types/BatchTimes';
+import * as GTrendsAPI                       from 'google-trends-api';
+import { sameHour }                          from '../../helpers/sameHour';
+import { ShuffleArray }                      from '../../helpers/ShuffleArray';
+import { Sleep }                             from '../../helpers/Sleep';
+import { ConfigManager }                     from '../../config/ConfigManager';
 
 interface GTrendsPayload {
     search: number;
 }
 
+interface GTrendsConfig {
+    error_count: number;
+    sleep: number;
+    cooldown: number;
+}
+
 export class GTrends extends Plugin<GTrendsPayload> {
+
+    private readonly plugin_config: GTrendsConfig;
 
     constructor() {
         super('gtrends', [
@@ -18,6 +27,21 @@ export class GTrends extends Plugin<GTrendsPayload> {
                 field_type: 'bigint'
             }
         ]);
+
+        if (!ConfigManager.Instance._.gtrends) {
+           this.plugin_config = {
+               error_count: 10,
+               sleep: 60,
+               cooldown: 5
+           };
+        } else {
+            this.plugin_config = {
+                error_count: ConfigManager.Instance._.gtrends.error_count || 10,
+                sleep: ConfigManager.Instance._.gtrends.sleep || 60,
+                cooldown: ConfigManager.Instance._.gtrends.cooldown || 5,
+            };
+        }
+
     }
 
     public start(): void {
@@ -99,16 +123,17 @@ export class GTrends extends Plugin<GTrendsPayload> {
 
                 } catch (e) {
                     this.addFail(e);
-                    if (this.getFailCount() >= 10) {
+                    if (this.getFailCount() >= this.plugin_config.error_count) {
                         if (e.requestBody) {
                             this.log.warn(`[${new Date(Date.now())}] [${e.requestBody}]`);
                         }
-                        this.cooldown(5);
+                        this.cooldown(this.plugin_config.cooldown);
                         this.teleport();
+                        GTrendsAPI.clearCookie();
                         return;
                     } else {
-                        this.log.warn(`[${new Date(Date.now())}] [Sleeping for 60s]`);
-                        await Sleep(60 * 1000);
+                        this.log.warn(`[${new Date(Date.now())}] [Sleeping for ${this.plugin_config.sleep}s]`);
+                        await Sleep(this.plugin_config.sleep);
                     }
                 }
             }

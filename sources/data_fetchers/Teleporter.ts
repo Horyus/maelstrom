@@ -100,6 +100,7 @@ export class Teleporter {
 
         if (this.openvpn) {
             this.openvpn.kill();
+            this.openvpn = undefined;
             this.location = UUID();
             this.teleporting = false;
             return ;

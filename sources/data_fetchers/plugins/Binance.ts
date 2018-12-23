@@ -4,6 +4,7 @@ import { Plugin }                                        from '../Plugin';
 import { sameDay }                                       from '../../helpers/sameDay';
 import { ShuffleArray }                                  from '../../helpers/ShuffleArray';
 import { Sleep }                                         from '../../helpers/Sleep';
+import { ConfigManager }                                 from '../../config/ConfigManager';
 
 enum BinanceRequestFields {
     OpenPrice = 1,
@@ -25,7 +26,15 @@ export interface BinancePayload {
     taker_buy: number;
 }
 
+interface GTrendsConfig {
+    error_count: number;
+    sleep: number;
+    cooldown: number;
+}
+
 export class Binance extends Plugin<BinancePayload> {
+
+    private readonly plugin_config: GTrendsConfig;
 
     constructor() {
         super('binance', [
@@ -59,6 +68,21 @@ export class Binance extends Plugin<BinancePayload> {
                 field_type: 'decimal',
             }
         ]);
+
+        if (!ConfigManager.Instance._.binance) {
+            this.plugin_config = {
+                error_count: 10,
+                sleep: 60,
+                cooldown: 5
+            };
+        } else {
+            this.plugin_config = {
+                error_count: ConfigManager.Instance._.binance.error_count || 10,
+                sleep: ConfigManager.Instance._.binance.sleep || 60,
+                cooldown: ConfigManager.Instance._.binance.cooldown || 5,
+            };
+        }
+
     }
 
     private static async sticks(symbol: string, start: number, end: number): Promise<any> {
@@ -146,13 +170,13 @@ export class Binance extends Plugin<BinancePayload> {
 
                 } catch (e) {
                     this.addFail(e);
-                    if (this.getFailCount() >= 10) {
-                        this.cooldown(2);
+                    if (this.getFailCount() >= this.plugin_config.error_count) {
+                        this.cooldown(this.plugin_config.cooldown);
                         this.teleport();
                         return;
                     } else {
-                        this.log.warn(`[${new Date(Date.now())}] [Sleeping for 60s]`);
-                        await Sleep(60 * 1000);
+                        this.log.warn(`[${new Date(Date.now())}] [Sleeping for ${this.plugin_config.sleep}s]`);
+                        await Sleep(this.plugin_config.sleep);
                     }
                 }
             }
