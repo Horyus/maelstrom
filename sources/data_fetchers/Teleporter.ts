@@ -100,6 +100,9 @@ export class Teleporter {
 
         if (this.openvpn) {
             this.openvpn.kill();
+            this.location = UUID();
+            this.teleporting = false;
+            return ;
         }
 
         let args: string[];
@@ -137,7 +140,7 @@ export class Teleporter {
             //Signale.fatal(data.toString());
         });
         this.openvpn.on('close', (code: number) => {
-            this.log.info(`[${new Date(Date.now())}]\t\t[Closed]`);
+            this.log.info(`[${new Date(Date.now())}]\t\t[Closing Portal]`);
         });
     }
 
