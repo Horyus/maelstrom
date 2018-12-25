@@ -13,7 +13,7 @@ import { Teleporter }           from './data_fetchers/Teleporter';
 
 const cli = CommandPost
     .create('maelstrom <action>')
-    .version('1.0.8', '-v, --version')
+    .version('1.0.9', '-v, --version')
     .description('Crypto Data Aggregator')
     .option('--config     <string>', 'Maelstrom configuration file path')
     .option('--dbport     <port>', 'Port of Postgres Database')
@@ -32,7 +32,8 @@ const cli = CommandPost
                     parseInt(opts.dbport[0]) || parseInt(process.env['MAELSTROM_DBPORT']) || 5432,
                     opts.dbusername[0] || process.env['MAELSTROM_DBUSERNAME'] || 'maelstrom',
                     opts.dbpassword[0] || process.env['MAELSTROM_DBPASSWORD'] || 'pass',
-                    opts.dbname[0] || process.env['MAELSTROM_DBNAME'] || 'maelstrom'
+                    opts.dbname[0] || process.env['MAELSTROM_DBNAME'] || 'maelstrom',
+                    ConfigManager.Instance._.ssl
                 );
                 if (ConfigManager.Instance._.teleporter) {
                     if (!ConfigManager.Instance._.teleporter.portals) {

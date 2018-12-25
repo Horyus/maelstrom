@@ -1,5 +1,6 @@
 import { Connection, createConnection } from 'typeorm';
 import { CustomTypeORMLogger }          from './CustomTypeORMLogger';
+import * as Fs from 'fs';
 
 export class DatabaseConnection {
 
@@ -18,14 +19,15 @@ export class DatabaseConnection {
         return (DatabaseConnection.instance || (DatabaseConnection.instance = new DatabaseConnection()));
     }
 
-    public async connect(host: string, port: number, username: string, password: string, database: string): Promise<void> {
+    public async connect(host: string, port: number, username: string, password: string, database: string, ssl?: any): Promise<void> {
         this.host = host;
         this.port = port;
         this.username = username;
         this.password = password;
         this.database = database;
 
-        this._ = await createConnection({
+        let config: any =
+        {
             type: 'postgres',
             host: this.host,
             port: this.port,
@@ -34,7 +36,21 @@ export class DatabaseConnection {
             database: this.database,
             logging: !!process.env.LOG,
             logger: process.env.LOG ? new CustomTypeORMLogger() : undefined
-        });
+        };
+
+        if (ssl) {
+            config = {
+                ...config,
+                ssl: {
+                    rejectUnauthorized : false,
+                    ca: Fs.readFileSync(ssl.ca).toString(),
+                    cert: Fs.readFileSync(ssl.cert).toString(),
+                    key: Fs.readFileSync(ssl.key).toString()
+                }
+            };
+        }
+
+        this._ = await createConnection(config);
 
     }
 
