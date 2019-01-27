@@ -10,6 +10,7 @@ import { GTrends }              from './data_fetchers/plugins/GTrends';
 import { DatasetTablesManager } from './database/DatasetTablesManager';
 import { TablesDetails }        from './types/TablesDetails';
 import { Teleporter }           from './data_fetchers/Teleporter';
+import { Poloniex }             from './data_fetchers/plugins/Poloniex';
 
 const cli = CommandPost
     .create('maelstrom <action>')
@@ -50,8 +51,7 @@ const cli = CommandPost
                     }
                 }
                 const scraper: Scraper = new Scraper([
-                    new Binance(),
-                    new GTrends()
+                    new Poloniex()
                 ]);
                 await scraper.init();
                 await scraper.start();
